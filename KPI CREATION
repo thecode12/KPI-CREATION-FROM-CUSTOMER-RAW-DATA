@@ -1,0 +1,80 @@
+import pandas as pd
+import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
+from functools import reduce 
+ds=pd.read_csv("comet_data_with_grid.csv")
+ds
+ds.isnull().sum()
+ds=ds[ds['Config_5G_Max_Backoff_Time_48'].notnull()]
+ds.isnull().sum()
+ds=ds[ds['Data_Usage_MSO_MB'].notnull()]
+ds
+com_sam=ds[(ds['MNC']==200) & (ds['MCC']==314)]
+com_sam=ds.groupby(['hex_id','MNC']).agg(com_sam=('Nr_Synchronization_Signals_RSRP','count')).reset_index()
+com_sam
+com_kpi=ds[(ds['MNC']==200) & (ds['MCC']==314)]
+com_kpi1=com_kpi.groupby(['hex_id','MNC']).agg(avg_rsrp_Comet=('Nr_Synchronization_Signals_RSRP','mean'),meadin_rsrp_Comet=('Nr_Synchronization_Signals_RSRP','median')
+                                                                    ,std_rsrp_Comet=('Nr_Synchronization_Signals_RSRP','std'),avg_rsrq_Comet=('Nr_Synchronization_Signals_RSRQ','mean'),meadin_rsrq_Comet=('Nr_Synchronization_Signals_RSRQ','median')
+                                                                    ,std_rsrq_Comet=('Nr_Synchronization_Signals_RSRQ','std'),avg_SINR_Comet=('Nr_Synchronization_Signals_SINR','mean'),meadin_SINR_Comet=('Nr_Synchronization_Signals_SINR','median')
+                                                                    ,std_SINR_Comet=('Nr_Synchronization_Signals_SINR','std'),PCI=('PCI','unique'),count_PCI=('PCI','nunique')).reset_index(0)
+com_kpi1
+com_kpi1.to_csv('Avg_Udated.csv')
+com_kpi2=ds[(ds['MNC']==200) & (ds['MCC']==314)]
+com_kpi2['MSO_Data_Usage_Band_600']=com_kpi2['Data_Usage_MSO_600MHz_DL_MB']+com_kpi2['Data_Usage_MSO_600MHz_UL_MB']
+com_kpi2.columns
+com_data=com_kpi2.groupby(['hex_id','MNC']).agg(MSO_Data_Usage=('Data_Usage_MSO_MB','sum'),
+                                                MSO_Data_Usage_Band_CBRS=('Data_Usage_MSO_CBRS_DLUL_MB','sum'),
+                                                MSO_Data_Usage_Band_600_DLUL=('MSO_Data_Usage_Band_600','sum'),
+                                                comcast_wifi_data_usage=('Total_WiFi_Data_Usage_MB','sum'),
+                                                other_wifi_data_usage=('Data_Usage_Comcast_other_wifi_MB','sum'),
+                                                Duration_ON_MSO_CBRS_MIN=('Duration_ON_MSO_CBRS_MIN','sum'),
+                                                MSO_duration_Band_600=('Duration_ON_MSO_600_MHz_MIN','sum'),
+                                                comcast_wifi_duration=('Duration_ON_Comcast_Public_WiFi_MIN','sum')).reset_index(0)
+com_data
+Handin_event=ds[(ds['HandIn_Reason']=='Hand_In to MSO')]
+Handout_event=ds[(ds['Handover_Reason']=='Hand_Out to MNO')]
+Count_of_Handin_event=Handin_event.groupby(['hex_id']).agg(Total_Handin_event=('HandIn_Reason','count')).reset_index()
+Count_of_Handout_event=Handout_event.groupby(['hex_id']).agg(Total_Handout_event=('Handover_Reason','count')).reset_index()
+com_600_kpi=ds[(ds['MNC']==200) & (ds['Band']==71)]
+com_600_kpi=com_600_kpi.groupby(['hex_id','MNC']).agg(comcast_600_Band_5g_ss_rsrp_avg=('Nr_Synchronization_Signals_RSRP','mean'),
+                                                                                        comcast_600_Band_5g_ss_rsrp_median=('Nr_Synchronization_Signals_RSRP','median'),
+                                                                                        comcast_600_Band_5g_ss_rsrq_avg=('Nr_Synchronization_Signals_RSRQ','mean'),
+                                                                                        comcast_600_Band_5g_ss_rsrq_median=('Nr_Synchronization_Signals_RSRQ','median'),
+                                                                                        comcast_600_Band_5g_ss_sinr_avg=('Nr_Synchronization_Signals_SINR','mean'),
+                                                                                        comcast_600_Band_5g_ss_sinr_median=('Nr_Synchronization_Signals_SINR','median')).reset_index(0)
+com_600_kpi
+com_CBRS_kpi=ds[(ds['Band']==48)]
+com_CBRS_kpi=com_CBRS_kpi.groupby(['hex_id','MNC']).agg(comcast_CBRS_Band_5g_ss_rsrp_avg=('Nr_Synchronization_Signals_RSRP','mean'),
+                                                        comcast_CBRS_Band_5g_ss_rsrp_median=('Nr_Synchronization_Signals_RSRP','median'),
+                                                        comcast_CBRS_Band_5g_ss_rsrq_avg=('Nr_Synchronization_Signals_RSRQ','mean'),
+                                                        comcast_CBRS_Band_5g_ss_rsrq_median=('Nr_Synchronization_Signals_RSRQ','median'),
+                                                        comcast_CBRS_Band_5g_ss_sinr_avg=('Nr_Synchronization_Signals_SINR','mean'),
+                                                        comcast_CBRS_Band_5g_ss_sinr_median=('Nr_Synchronization_Signals_SINR','median')).reset_index(0)
+ com_CBRS_kpi
+ com_OTHER_kpi=ds.groupby(['hex_id','MNC']).agg(Comcast_wifi_rssi_avg=('WiFi_RSSI','mean'),Comcast_wifi_rx_quality_avg=('Wifi_RX_Quality','mean'),
+                                                                                           Other_wifi_rssi_avg=('WiFi_RSSI','mean'),
+                                                                                           Other_wifi_rx_quality_avg=('Wifi_RX_Quality','mean'),
+                                                                                           Median_HO_Transition_Gap=('Handover_Transition_Gap','median'),
+                                                                                           Comcast_wifi_rssi_median=('WiFi_RSSI','median'),
+                                                                                           Comcast_wifi_rx_quality_median=('Wifi_RX_Quality','median'),
+                                                                                           Other_wifi_rssi_median=('WiFi_RSSI','median')).reset_index(0)
+ com_OTHER_kpi
+ ver_sam=ds[(ds['MNC']==480) & (ds['MCC']==311)]
+ ver_sam=ds.groupby(['hex_id','MNC']).agg(ver_sam=('Signal_RSRP','count')).reset_index()
+ ver_sam
+ ver_kpi=ds[(ds['MNC']==480) & (ds['MCC']==311)]
+ ver_kpi1=ver_kpi.groupby(['hex_id','MNC']).agg(Verizon_lte_rsrp_avg=('Signal_RSRP','mean'),
+                                                                      Verizon_lte_rsrp_median=('Signal_RSRP','median') ,
+                                                                      Verizon_lte_rsrq_avg=('Signal_RSRQ','mean'),
+                                                                      Verizon_lte_rsrq_Median=('Signal_RSRQ','median')).reset_index(0)
+ ver_kpi1
+ data_frames=[com_sam,com_kpi1,com_data,Count_of_Handin_event,Count_of_Handout_event,com_600_kpi,com_CBRS_kpi,com_OTHER_kpi,ver_sam,ver_kpi1]
+ main_data = reduce(lambda  left,right: pd.merge(left,right,on=['hex_id'],how='outer'), data_frames)
+ main_data
+ main_data.to_csv('Avg_Udated.csv', index=0)
+                                                                      
+                                                                      
+ 
+ 
+ 
